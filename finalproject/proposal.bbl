@@ -1,0 +1,25 @@
+% \bib, bibdiv, biblist are defined by the amsrefs package.
+\begin{bibdiv}
+\begin{biblist}
+
+\bib{logg2012automated}{book}{
+      author={Logg, Anders},
+      author={Mardal, Kent-Andre},
+      author={Wells, Garth},
+       title={Automated solution of differential equations by the finite
+  element method: The fenics book},
+   publisher={Springer Science \& Business Media},
+        date={2012},
+      volume={84},
+}
+
+\bib{pironneau1989finite}{book}{
+      author={Pironneau, Olivier},
+      author={Pironneau, Olivier},
+       title={Finite element methods for fluids},
+   publisher={Wiley New York},
+        date={1989},
+}
+
+\end{biblist}
+\end{bibdiv}
