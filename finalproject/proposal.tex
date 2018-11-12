@@ -1,0 +1,130 @@
+\documentclass[12pt]{article}
+\usepackage{amssymb, amsmath, amsthm, amsfonts}
+\usepackage[alphabetic]{amsrefs}
+\usepackage{mathrsfs,comment}
+\usepackage{float}
+\usepackage[all,arc,2cell]{xy}
+\usepackage{enumerate}
+\usepackage{tcolorbox}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{MnSymbol}
+\usepackage{pdfpages}
+\usepackage{tikz}
+\usetikzlibrary{arrows,automata,calc,positioning}
+\usepackage[colorlinks = true,
+linkcolor = blue,
+urlcolor  = blue,
+citecolor = blue,
+anchorcolor = blue]{hyperref}
+
+\usepackage{cleveref}
+
+
+%theoremstyle{plain} --- default
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem*{solution}{Solution}
+
+
+\makeatother
+\numberwithin{equation}{section}
+
+
+
+%%%Commands and shortcuts%%%%
+%
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\Q}{\mathbb{Q}}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\F}{\mathbb{F}}
+\newcommand{\xb}{\mathbf{x}}
+\newcommand{\yb}{\mathbf{y}}
+\newcommand{\ab}{\mathbf{a}}
+\newcommand{\zb}{\mathbf{z}}
+\newcommand{\func}[3]{#1\colon #2 \rightarrow #3}
+\newcommand{\sumn}{\sum_{i=1}^{n}}
+\newcommand{\innerp}[2]{\langle #1,#2 \rangle}
+\newcommand{\dsq}{d_{sq}}
+\newcommand{\dtc}{d_{tc}}
+\newcommand{\ifff}{if and only if }
+\newcommand{\st}{such that }
+\newcommand{\te}{there exists }
+\newcommand{\wrt}{with respect to }
+\newcommand{\wloG}{without loss of generality }
+\newcommand{\Wlog}{Without loss of generality }
+\newcommand{\ssteq}{\subseteq}
+\newcommand{\setst}{\hspace{1mm} | \hspace{1mm} }
+\newcommand{\Bs}{\mathscr{B}}
+\newcommand{\Us}{\mathscr{U}}
+\newcommand{\T}{\mathcal{T}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\G}{\mathcal{G}}
+\newcommand{\Pc}{\mathcal{P}}
+\newcommand{\Sc}{\mathcal{S}}
+\newcommand{\C}{\mathcal{C}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\Lc}{\mathcal{L}}
+\newcommand{\onen}{\{1,\ldots,n\}}
+\newcommand{\finv}[2]{#1^{-1}\left(#2\right)}		
+\newcommand{\es}{\varnothing}	
+\newcommand{\ol}[1]{\overline{#1}}	
+\newcommand{\xnn}{(\mathbf{x}_n)_{n \in \N}}
+\newcommand{\sft}{\mathbf{SFT_1}}		
+\newcommand{\cop}{\sqcup}	
+\newcommand{\cyc}[1]{#1_1\ldots #1_n#1_1}	
+\newcommand{\pcyc}[2]{#2(#1_1)\ldots #2(#1_n)#2(#1_1)}	
+\newcommand{\cyci}[2]{#1_1\ldots #1_{#2}#1_1}
+\newcommand{\pcyci}[3]{#3(#1_1)\ldots #3(#1_{#2})#3(#1_1)}
+\newcommand{\xh}{\bar{x}}	
+\newcommand{\yh}{\bar{y}}		
+\newcommand{\equivcls}[1]{#1/{\sim}}	
+\newcommand{\modab}[3]{#1 \equiv #2 \pmod{#3}}						
+\newcommand{\farg}{{-}}																																						
+
+\DeclareMathOperator{\Cl}{Cl}
+\DeclareMathOperator{\Bd}{Bd}
+\DeclareMathOperator{\Int}{Int}
+\DeclareMathOperator{\id}{id}
+\DeclareMathOperator{\Hom}{Hom}
+\DeclareMathOperator{\Tor}{Tor}
+\DeclareMathOperator{\Ext}{Ext}
+
+\renewcommand{\epsilon}{\varepsilon}
+%\renewcommand{\phi}{\varphi}
+\renewcommand\qedsymbol{$\blacksquare$}
+
+\usepackage{color}
+\newcommand{\Comments}{1}
+\newcommand{\raf}[1]{\ifnum\Comments=1\textcolor{blue}{[RF: #1]}\fi}
+
+
+\title{CSCI 5636 Final Project Proposal \\
+\large A finite element approach simulating flow over a Formula 1 car's wing using FEniCS}
+\author{Luke Meszar}
+\date{November 12, 2018}
+\begin{document}
+	\maketitle
+	In this project, I want to simulate the flow over a Formula 1 car's wing. I will probably choose the rear wing since it is aerodynamically simpler. I will also choose to model it after older cars since the modern ones have such complicated aerodynamic features. If I can find the technical regulations from this era, I will look at them to see if I can make the geometry as accurately as possible. Also, this simulation will ignore a lot of the important real life factors. The biggest is the lack of a whole car simulation. The flow over the rear wing of a car depends entirely on how the rest of the car shapes the air flowing around it before it hits the rear wing. I will just be simulating the flow over the rear wing on its own.
+	
+	We will be looking at incompressible fluids governed by the Navier-Stokes equations. We let $\rho(x,t)$ be the density of the fluid at point $x$ at times $t$. Likewise, let $u(x,t)$ be its velocity. We start with the mass continuity equation
+	\[\frac{\partial \rho}{\partial t}+\nabla \cdot (\rho u) = 0.\]
+	We also consider the Cauchy momentum equation 
+	\[\frac{\partial \rho u}{\partial t} + \nabla \cdot (pu \otimes u) + \nabla p - \eta \Delta u - \left(\frac{\eta}{3}+\xi\right)\nabla(\nabla\cdot u) = f\]
+	where $f$ are the external body forces (gravity etc.) $p$ is the pressure and $\eta$ and $\xi$ are the first and second viscosities. Since we are concerned with incompressible flows where $\rho$ can be treated as a constant, then, we get the Navier-Stokes equations:
+	\begin{gather*}
+	\nabla \cdot u = 0 \\
+	\frac{\partial u}{\partial t} + u\nabla u + \nabla p = f.
+	\end{gather*}
+	Using these equations, we will simulate how the air moves around a wing. I am note sure yet how to solve these equations with the geometry of the wing taken account of. Once I have results, I would also like to calculate the downforce (i.e. negative lift) and drag the wing generates. I may also compare the downforce and drag on two or three different design of wings. I will be using FEniCS as my finite element software for this project. 
+\end{document}
