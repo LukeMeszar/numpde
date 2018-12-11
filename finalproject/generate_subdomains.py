@@ -5,7 +5,10 @@ set_log_level(1)
 # Read mesh
 ifile = sys.argv[1]
 ofile = sys.argv[2]
-ofile2 = sys.argv[3]
+if len(sys.argv) > 3:
+    ofile2 = sys.argv[3]
+else:
+    ofile2 = None
 mesh = Mesh(ifile)
 coords = mesh.coordinates()
 x = [a[0] for a in coords]
@@ -14,6 +17,7 @@ min_x = min(x)
 max_x = max(x)
 min_y = min(y)
 max_y = max(y)
+print(min_x,max_x)
 
 # Sub domain for no-slip (mark whole boundary, inflow and outflow will overwrite)
 class Noslip(SubDomain):
@@ -64,8 +68,9 @@ file << sub_domains
 
 
 # Save sub domains to VTK files
-file = File(ofile2)
-file << sub_domains
+if ofile2 != None:
+    file = File(ofile2)
+    file << sub_domains
 #
 # file = File("subdomains_double.pvd")
 # file << sub_domains_double

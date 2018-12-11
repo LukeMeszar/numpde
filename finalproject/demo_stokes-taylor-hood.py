@@ -37,6 +37,8 @@ from dolfin import *
 # sub_domains = MeshFunction("size_t", mesh, "cad_files/files/Ferrari_SF71H_V2_subdomains.xml")
 mesh = Mesh("dolfin_fine.xml.gz")
 sub_domains = MeshFunction("size_t", mesh, "dolfin_fine_subdomains2.xml.gz")
+#mesh = Mesh("airfoil_data/naca5012.xml")
+#sub_domains = MeshFunction("size_t", mesh, "airfoil_data/naca5012_subdomains.xml")
 
 plt.figure()
 plot(mesh)
