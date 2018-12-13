@@ -25,6 +25,14 @@ class Noslip(SubDomain):
         return on_boundary
 
 # Sub domain for inflow (right)
+class TopWall(SubDomain):
+    def inside(self, x, on_boundary):
+        return near(x[1], max_y) and on_boundary
+
+class BotWall(SubDomain):
+    def inside(self, x, on_boundary):
+        return near(x[1], min_y) and on_boundary
+
 class Inflow(SubDomain):
     def inside(self, x, on_boundary):
         return near(x[0], min_x) and on_boundary
@@ -41,7 +49,7 @@ sub_domains = MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
 #sub_domains_double = MeshFunction("double", mesh, mesh.topology().dim() - 1)
 
 # Mark all facets as sub domain 3
-sub_domains.set_all(3)
+sub_domains.set_all(4)
 #sub_domains_bool.set_all(False)
 #sub_domains_double.set_all(0.3)
 
@@ -58,6 +66,13 @@ inflow.mark(sub_domains, 1)
 # Mark outflow as sub domain 2, 0.2, True
 outflow = Outflow()
 outflow.mark(sub_domains, 2)
+
+topwall = TopWall()
+topwall.mark(sub_domains,3)
+
+botwall = BotWall()
+botwall.mark(sub_domains,3)
+
 #outflow.mark(sub_domains_double, 0.2)
 #outflow.mark(sub_domains_bool, True)
 

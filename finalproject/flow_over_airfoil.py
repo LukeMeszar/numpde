@@ -10,12 +10,13 @@ mu = 0.001         # dynamic viscosity
 rho = 1            # density
 
 PROGRESS = 16
+TRACE = 13
 
 # mesh = Mesh("airfoil_data/naca5012.xml")
 # sub_domains = MeshFunction("size_t", mesh, "airfoil_data/naca5012_subdomains.xml")
 
-mesh = Mesh("airfoil_data/naca5012_finer.xml")
-sub_domains = MeshFunction("size_t", mesh, "airfoil_data/naca5012_finer_subdomains.xml")
+mesh = Mesh("airfoil_data/naca5012/naca5012_finer.xml")
+sub_domains = MeshFunction("size_t", mesh, "airfoil_data/naca5012/naca5012_finer_subdomains.xml")
 
 V = VectorFunctionSpace(mesh, 'CG', 2)
 Q = FunctionSpace(mesh, 'CG', 1)
@@ -31,7 +32,7 @@ Q = FunctionSpace(mesh, 'CG', 1)
 # cylinder = 'on_boundary && x[0]>0.1 && x[0]<0.3 && x[1]>0.1 && x[1]<0.3'
 
 #inflow_profile = ('4.0*1.5*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0')
-inflow_profile = ('0*x[1] + 1', '0')
+inflow_profile = ('sin(x[1]) + 1', '0')
 noslip = Constant((0, 0))
 # bcu_inflow = DirichletBC(V, Expression(inflow_profile, degree=2), inflow)
 # bcu_walls = DirichletBC(V, Constant((0, 0)), walls)
@@ -41,10 +42,11 @@ noslip = Constant((0, 0))
 # bcp = [bcp_outflow]
 
 
-bcu_noslip = DirichletBC(V, noslip, sub_domains, 0) #top and bottom walls and airfoil
-bcu_inflow = DirichletBC(V, Expression(inflow_profile, degree=2), sub_domains, 1) #left walls
-bcp_outflow = DirichletBC(Q, Constant(0), sub_domains, 2)
-bcu = [bcu_noslip, bcu_inflow]
+bcu_airfoil = DirichletBC(V, noslip, sub_domains, 0) #airfoil
+bcu_top_bot = DirichletBC(V, noslip, sub_domains, 3) #top and bottom walls
+bcu_inflow = DirichletBC(V, Expression(inflow_profile, degree=2), sub_domains, 1) #left wall
+bcp_outflow = DirichletBC(Q, Constant(0), sub_domains, 2) #right wall
+bcu = [bcu_airfoil, bcu_inflow, bcu_top_bot]
 bcp = [bcp_outflow]
 
 
@@ -75,8 +77,8 @@ def sigma(u, p):
     return 2*mu*epsilon(u) - p*Identity(len(u))
 
 
-# dx = Measure("dx", domain=mesh, subdomain_data=sub_domains) # Volume integration
-# ds = Measure("ds", domain=mesh, subdomain_data=sub_domains)
+dx = Measure("dx", domain=mesh, subdomain_data=sub_domains)
+ds = Measure("ds", domain=mesh, subdomain_data=sub_domains)
 
 
 F1 = rho*dot((u - u_n) / k, v)*dx \
@@ -97,6 +99,10 @@ A1 = assemble(a1)
 A2 = assemble(a2)
 A3 = assemble(a3)
 
+D = -p*n[0]*ds(0)
+L = p*n[1]*ds(0)
+
+
 
 [bc.apply(A1) for bc in bcu]
 [bc.apply(A2) for bc in bcp]
@@ -111,6 +117,9 @@ File('navier_stokes_airfoil/naca5012.xml.gz') << mesh
 
 progress = Progress('Time-stepping')
 set_log_level(PROGRESS)
+
+drag_list = []
+lift_list = []
 
 t = 0
 counter = 0
@@ -134,6 +143,15 @@ for n in range(num_steps):
     b3 = assemble(L3)
     solve(A3, u_.vector(), b3, 'bicgstab', 'ilu')
 
+    drag = assemble(D)
+    lift = assemble(L)
+
+    drag_list.append(drag)
+    lift_list.append(lift)
+    print("p_n", str(p_n))
+    print("drag:", drag.get_local(), "sum", drag.sum())
+    print("lift:", lift.get_local(), "sum", lift.sum())
+
     # Plot solution
     plot(u_, title='Velocity')
     plot(p_, title='Pressure')
@@ -153,3 +171,13 @@ for n in range(num_steps):
     print('u max:', u_.vector().get_local().max())
 
 plt.show()
+
+drag_set = set(drag_list)
+print(len(drag_set), len(drag_list))
+lift_set = set(lift_list)
+print(len(lift_set), len(lift_list))
+for drg in drag_list:
+    print(drg.get_local())
+print('\n\n\n\n\n\n')
+for lft in lift_list:
+    print(lft.get_local())
