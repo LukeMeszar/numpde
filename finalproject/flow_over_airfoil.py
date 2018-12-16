@@ -2,8 +2,9 @@ from fenics import *
 from mshr import *
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
 
-T = 1.0          # final time
+T = 1.0        # final time
 num_steps = 250   # number of time steps
 dt = T / num_steps # time step size
 mu = 0.001         # dynamic viscosity
@@ -12,39 +13,25 @@ rho = 1            # density
 PROGRESS = 16
 TRACE = 13
 
-# mesh = Mesh("airfoil_data/naca5012.xml")
-# sub_domains = MeshFunction("size_t", mesh, "airfoil_data/naca5012_subdomains.xml")
-
 mesh = Mesh("airfoil_data/naca5012/naca5012_finer.xml")
-sub_domains = MeshFunction("size_t", mesh, "airfoil_data/naca5012/naca5012_finer_subdomains.xml")
+sub_domains = MeshFunction("size_t", mesh,\
+ "airfoil_data/naca5012/naca5012_finer_subdomains.xml")
 
 V = VectorFunctionSpace(mesh, 'CG', 2)
 Q = FunctionSpace(mesh, 'CG', 1)
 
-# P2 = VectorElement("Lagrange", mesh.ufl_cell(), 2)
-# P1 = FiniteElement("Lagrange", mesh.ufl_cell(), 1)
-# TH = P2 * P1
-# W = FunctionSpace(mesh, TH)
-
-# inflow   = 'near(x[0], 0)'
-# outflow  = 'near(x[0], 2.2)'
-# walls    = 'near(x[1], 0) || near(x[1], 0.41)'
-# cylinder = 'on_boundary && x[0]>0.1 && x[0]<0.3 && x[1]>0.1 && x[1]<0.3'
-
-#inflow_profile = ('4.0*1.5*x[1]*(0.41 - x[1]) / pow(0.41, 2)', '0')
-inflow_profile = ('sin(x[1]) + 1', '0')
+theta = float(sys.argv[1])
+U_0 = 1.0
+u_outer_boun = Constant((U_0*cos(theta), U_0*sin(theta)))
+inflow_profile = ('1', '0')
 noslip = Constant((0, 0))
-# bcu_inflow = DirichletBC(V, Expression(inflow_profile, degree=2), inflow)
-# bcu_walls = DirichletBC(V, Constant((0, 0)), walls)
-# bcu_cylinder = DirichletBC(V, Constant((0, 0)), cylinder)
-# bcp_outflow = DirichletBC(Q, Constant(0), outflow)
-# bcu = [bcu_inflow, bcu_walls, bcu_cylinder]
-# bcp = [bcp_outflow]
 
 
 bcu_airfoil = DirichletBC(V, noslip, sub_domains, 0) #airfoil
-bcu_top_bot = DirichletBC(V, noslip, sub_domains, 3) #top and bottom walls
-bcu_inflow = DirichletBC(V, Expression(inflow_profile, degree=2), sub_domains, 1) #left wall
+bcu_top_bot = DirichletBC(V, u_outer_boun, sub_domains, 3) #top and bottom walls
+bcu_inflow = DirichletBC(V, u_outer_boun, sub_domains, 1) #left wall
+# bcu_top_bot = DirichletBC(V, noslip, sub_domains, 3) #top and bottom walls
+# bcu_inflow = DirichletBC(V, Expression(inflow_profile,degree=2), sub_domains, 1) #left wall
 bcp_outflow = DirichletBC(Q, Constant(0), sub_domains, 2) #right wall
 bcu = [bcu_airfoil, bcu_inflow, bcu_top_bot]
 bcp = [bcp_outflow]
@@ -99,7 +86,7 @@ A1 = assemble(a1)
 A2 = assemble(a2)
 A3 = assemble(a3)
 
-D = -p*n[0]*ds(0)
+D = p*n[0]*ds(0)
 L = p*n[1]*ds(0)
 
 
@@ -107,8 +94,8 @@ L = p*n[1]*ds(0)
 [bc.apply(A1) for bc in bcu]
 [bc.apply(A2) for bc in bcp]
 
-xdmffile_u = XDMFFile('navier_stokes_airfoil/velocity_naca5012.xdmf')
-xdmffile_p = XDMFFile('navier_stokes_airfoil/pressure_naca5012.xdmf')
+xdmffile_u = XDMFFile('navier_stokes_airfoil/velocity_naca5012' + str(theta) + '.xdmf')
+xdmffile_p = XDMFFile('navier_stokes_airfoil/pressure_naca5012' + str(theta) + '.xdmf')
 
 timeseries_u = TimeSeries('navier_stokes_airfoil/velocity_series_naca5012')
 timeseries_p = TimeSeries('navier_stokes_airfoil/pressure_series_naca5012')
@@ -120,6 +107,10 @@ set_log_level(PROGRESS)
 
 drag_list = []
 lift_list = []
+time_list = []
+
+drag = assemble(D)
+lift = assemble(L)
 
 t = 0
 counter = 0
@@ -143,18 +134,11 @@ for n in range(num_steps):
     b3 = assemble(L3)
     solve(A3, u_.vector(), b3, 'bicgstab', 'ilu')
 
-    drag = assemble(D)
-    lift = assemble(L)
-
-    drag_list.append(drag)
-    lift_list.append(lift)
-    print("p_n", str(p_n))
-    print("drag:", drag.get_local(), "sum", drag.sum())
-    print("lift:", lift.get_local(), "sum", lift.sum())
+    drag_list.append(drag.inner(p_n.vector()))
+    lift_list.append(lift.inner(p_n.vector()))
+    time_list.append(t)
 
     # Plot solution
-    plot(u_, title='Velocity')
-    plot(p_, title='Pressure')
 
     # Save solution to file (XDMF/HDF5)
     xdmffile_u.write(u_, t)
@@ -170,14 +154,15 @@ for n in range(num_steps):
     # Update progress bar
     print('u max:', u_.vector().get_local().max())
 
-plt.show()
+def plot_functionals(times, forces, type, theta):
 
-drag_set = set(drag_list)
-print(len(drag_set), len(drag_list))
-lift_set = set(lift_list)
-print(len(lift_set), len(lift_list))
-for drg in drag_list:
-    print(drg.get_local())
-print('\n\n\n\n\n\n')
-for lft in lift_list:
-    print(lft.get_local())
+    plt.plot(times, forces)
+    plt.xlabel('time')
+    plt.ylabel(type)
+    plt.title(type + " over time at theta = " + str(theta))
+    plt.savefig("lift_and_drag/" + type + "_" + str(theta) + ".png")
+    plt.clf()
+
+plot_functionals(time_list, drag_list, "drag", theta)
+plot_functionals(time_list, lift_list, "lift", theta)
+print(max(drag_list), max(lift_list))
