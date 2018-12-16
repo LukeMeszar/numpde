@@ -43,6 +43,14 @@
        pages={1309\ndash 1331},
 }
 
+\bib{langtangen2016solving}{misc}{
+      author={Langtangen, Hans~Petter},
+      author={Logg, Anders},
+       title={Solving pdes in python the fenics tutorial volume i},
+   publisher={Berlin, Springer},
+        date={2016},
+}
+
 \bib{marzocca2009naca}{article}{
       author={Marzocca, Pier},
        title={The naca airfoil series},

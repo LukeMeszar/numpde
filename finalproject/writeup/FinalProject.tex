@@ -4,6 +4,7 @@
 \usepackage{mathrsfs,comment}
 \usepackage{float}
 \usepackage{bm}
+\usepackage{subcaption}
 \usepackage[all,arc,2cell]{xy}
 \usepackage{enumerate}
 \usepackage{url}
@@ -147,7 +148,7 @@ anchorcolor = blue]{hyperref}
 	\epsilon(u) = \frac{1}{2}\left(\nabla u + (\nabla u)^T\right).
 	\end{equation}
 	
-	To solve this system of equations using a finite-element method, it will have to be converted to a weak form first. Due to the inherent structure of these equations, a method known as IPCS \cite{goda1979multistep} (Incremental Pressure Correction System) will have to be used. 
+	To solve this system of equations using a finite-element method, it will have to be converted to a weak form first. Due to the inherent structure of these equations, a simple finite-difference method at each timestep will not work. Instead the method known as IPCS \cite{goda1979multistep} (Incremental Pressure Correction System) will be used. 
 	
 	At each timestep, we will have to eventually update the values for the velocity and pressures. The IPCS method starts by estimating a tentative velocity $u^*$ using a midpoint finite-difference scheme as
 	\begin{equation}\label{eq:tenvel}
@@ -158,7 +159,7 @@ anchorcolor = blue]{hyperref}
 	&\langle v,w\rangle=\int_\Omega vw\,dx\\
 	&\langle v,w\rangle_{\partial\Omega} = \int_{\partial\Omega}vw\,ds.
 	\end{align*}
-	Now, we move on to compute the new velocity using the tentative velocity $u^*$ as
+	Now, we move on to compute the new pressure using the tentative velocity $u^*$ as
 	\begin{equation}\label{eq:newpress}
 	\langle\nabla p^{n+1},\nabla q\rangle=\langle\nabla p^n,\nabla q\rangle-\Delta t^{-1}\langle\nabla\cdot u^*,q\rangle.
 	\end{equation}
@@ -166,7 +167,6 @@ anchorcolor = blue]{hyperref}
 	\begin{equation}\label{eq:newvel}
 	\langle u^{n+1},v\rangle=\langle u^*,v\rangle-\Delta t\langle\nabla(p^{n+1}−p^n),v\rangle.
 	\end{equation}
-	
 	Now, to show how to implement this method into FEniCS. 
 	\begin{lstlisting}[language=Python]
 	V = VectorFunctionSpace(mesh, 'CG', 2)
@@ -174,7 +174,7 @@ anchorcolor = blue]{hyperref}
 	\end{lstlisting}
 	We create a finite-element space for the velocity and pressure of dimension two and one respectively. This defines a domain consisting of Taylor-Hood elements needed for stability for these equations. 
 	
-	Next, we create the boundary conditions. We choose to have the left, top, and bottom walls have flow defined by the vector $U_0\cos(\theta)\uvec{i} + U_0\sin(\theta)\uvec{j}$. By varying $\theta$, different angles of attack of the wing can be simulated. The boundary of the airfoil is given a noslip boundary condition. 
+	Next, we create the boundary conditions. We choose to have the left, top, and bottom walls have flow defined by the vector $U_0\cos(\theta)\uvec{i} + U_0\sin(\theta)\uvec{j}$. By varying $\theta$, different angles of attack of the wing can be simulated. The boundary of the airfoil is given a noslip boundary condition. The outflow is given a constant value of 0 for the pressure.
 	
 	\begin{lstlisting}[language=Python]
 	theta = float(sys.argv[1])
@@ -282,16 +282,80 @@ anchorcolor = blue]{hyperref}
 		p_n.assign(p_)
 	\end{lstlisting}
 	
-	For each solve, we use a Krylov method with a different iteration methods and preconditioners. At each time step, the lift and drag where computed by evaluating the necessary surface integrals.
+	For each solve, a Krylov method was used with a different iteration methods and preconditioners. At each time step, the lift and drag where computed by evaluating the necessary surface integrals.
 
-	The full code can be found in \textit{flow\_over\_airfoil.py} and in the appendix.
+	The full code can be found in \textit{flow\_over\_airfoil.py} and in the appendix. This code was modeled off the flow around a cylinder example found in this tutorial by Langtangen and Logg \cite{langtangen2016solving}.
 	\section*{Results}
-	The simulation was run with values of $\theta$ in $\{0.1,0.2,\ldots, 1.4}$. At $\theta = 1.5$, the solution becomes unstable and fails to converge.
+	The simulation was run with values of $\theta$ in $\{0.1,0.2,\ldots, 1.4\}$. At $\theta = 1.5$, the solution becomes unstable and fails to converge. The simulation was run for 1 second with 250 times steps. I attempted running longer simulations with more times steps, but the results weren't significantly different. I would hypothesis this is because I was working with low Reynolds number flow. This should keep the amount of turbulence low so there wouldn't be any interesting long term behavior.
 	
+	 At each value of $\theta$, a plot was made of the lift and drag over time. For references, the plots for $\theta = 0.0$ and $\theta = 1.4$ are included.
+	\begin{figure}[H]
+		\centering
+		\begin{subfigure}[t]{0.5\textwidth}
+			\centering
+			\includegraphics[scale=0.5]{../lift_and_drag/drag_0_0.png}
+		\end{subfigure}%
+		~ 
+		\begin{subfigure}[t]{0.5\textwidth}
+			\centering
+			\includegraphics[scale=0.5]{../lift_and_drag/drag_1_4.png}
+		\end{subfigure}
+		\caption{Values for Drag vs. Time}
+	\end{figure}
+
+	They both display a linear relationship of drag over time. However, at $\theta = 1.4$, the maximum drag is significantly less than for $\theta = 0.0$.
 	
+	\begin{figure}[H]
+		\centering
+		\begin{subfigure}[t]{0.5\textwidth}
+			\centering
+			\includegraphics[scale=0.5]{../lift_and_drag/lift_0_0.png}
+		\end{subfigure}%
+		~ 
+		\begin{subfigure}[t]{0.5\textwidth}
+			\centering
+			\includegraphics[scale=0.5]{../lift_and_drag/lift_1_4.png}
+		\end{subfigure}
+		\caption{Values for Lift vs. Time}
+	\end{figure}
+
+	Again, there is almost linear relationship between lift and time and there is an increase in maximum lift at higher values of $\theta$. It is interesting for $\theta = 1.4$, the lift drops off right around one second. 
+	
+	The next two plots show how the maximum lift and drag change with $\theta$.
+	\begin{figure}[H]
+		\centering
+		\includegraphics[scale=0.4]{../maxdrag.png}
+		\caption{}
+	\end{figure}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[scale=0.4]{../maxlift.png}
+		\caption{}
+	\end{figure}
+
+	Here, we see that lift and drag have the opposite change as $\theta$ increases and in both cases, it makes sense. Note that $\theta = 0.0$ can be though of as being air flowing head on to the leading edge and $\theta = 1.4 \approx \pi/2$ as  air flowing from below. Then, it makes sense there would be more drag along against the leading edge if the air is coming head on at $\theta  = 0.0$ than when it is coming from below. Conversely, it makes sense that there is more lift if the air is coming from below at $\theta = 1.4$ then from head on.
+	
+	\begin{figure}[H]
+		\centering
+		\includegraphics[scale=0.5]{../max_both.png}
+		\caption{Lift vs. $\theta$ on a log-linear scale and drag vs. $\theta$ on a linear-linear scale}
+		\label{fig:dragandlift}
+	\end{figure}
+	In \cref{fig:dragandlift} we see lift and drag vs. $\theta$ together. However, since lift is plotted on a log-linear scale, it is clear that the affects on lift are much greater as $\theta$ changes than for drag.
+	
+	There are a number of .xdmf files in the \textit{/navier\_stokes\_airfoil} folder that provide animations for the velocity and pressure over time for various $\theta$ values. However, I was unable to export them and embed them in this writeup due to issue with Paraview.
+	
+	\section*{Future Work}
+	In the future, the first thing I would do is to develop a better understanding of the physics behind fluid dynamics. At the moment, I am not able to accurately verify that my results seems reasonable since I do not understand the underlying dynamics well enough. 
+	
+	Another avenue to explore is how changing the boundary condition on the right wall would affect the end result. I know that what type of condition imposed here can affect the solution upstream so it would be interesting to see what type of changes occur. 
+	
+	Another avenue of future work would be to compare different airfoils. Do they have different maximum lift and drags over different values of $\theta$? Would the equivalent of \cref{fig:dragandlift} look different for different airfoils?
+	
+	\bibliographystyle{unsrt}
+	\bibliography{finproj}
 	\section*{Appendix}
 	\lstinputlisting[language=Python]{../generate_subdomains.py}
 	\lstinputlisting[language=Python]{../flow_over_airfoil.py}
-	\bibliographystyle{unsrt}
-	\bibliography{finproj}
+	
 \end{document}

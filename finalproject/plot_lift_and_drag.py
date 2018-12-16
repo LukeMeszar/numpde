@@ -19,16 +19,16 @@ for i in range(1,len(data)):
     lifts.append(float(split_data[2]))
 
 def plot_max_functionals(thetas, y_data, type):
-    plt.plot(thetas,y_data)
+    plt.plot(thetas,y_data, 'o')
     plt.xlabel(x_axis_label)
     plt.ylabel(type)
-    plt.title("Max " + type + "vs. theta")
+    plt.title("Max " + type + " vs. theta")
     plt.savefig("max" + type + ".png")
     plt.clf()
 
 def plot_both(thetas, y_data1, type1, y_data2, type2):
-    plt.plot(thetas,y_data1,label=type1)
-    plt.semilogy(thetas,y_data2, label=type2)
+    plt.plot(thetas,y_data1, 'o',label=type1)
+    plt.semilogy(thetas,y_data2, 'o', label=type2)
     plt.xlabel(x_axis_label)
     plt.ylabel("Lift and Drag")
     plt.title("Max lift and drag vs. theta")
