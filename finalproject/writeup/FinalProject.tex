@@ -282,11 +282,11 @@ anchorcolor = blue]{hyperref}
 		p_n.assign(p_)
 	\end{lstlisting}
 	
-	For each solve, we use a Krylov method with a different iteration methods and preconditioners. 
+	For each solve, we use a Krylov method with a different iteration methods and preconditioners. At each time step, the lift and drag where computed by evaluating the necessary surface integrals.
 
 	The full code can be found in \textit{flow\_over\_airfoil.py} and in the appendix.
 	\section*{Results}
-	
+	The simulation was run with values of $\theta$ in $\{0.1,0.2,\ldots, 1.4}$. At $\theta = 1.5$, the solution becomes unstable and fails to converge.
 	
 	
 	\section*{Appendix}

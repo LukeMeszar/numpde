@@ -97,8 +97,8 @@ L = p*n[1]*ds(0)
 xdmffile_u = XDMFFile('navier_stokes_airfoil/velocity_naca5012' + str(theta) + '.xdmf')
 xdmffile_p = XDMFFile('navier_stokes_airfoil/pressure_naca5012' + str(theta) + '.xdmf')
 
-timeseries_u = TimeSeries('navier_stokes_airfoil/velocity_series_naca5012')
-timeseries_p = TimeSeries('navier_stokes_airfoil/pressure_series_naca5012')
+#timeseries_u = TimeSeries('navier_stokes_airfoil/velocity_series_naca5012')
+#timeseries_p = TimeSeries('navier_stokes_airfoil/pressure_series_naca5012')
 
 File('navier_stokes_airfoil/naca5012.xml.gz') << mesh
 
@@ -144,8 +144,8 @@ for n in range(num_steps):
     xdmffile_u.write(u_, t)
     xdmffile_p.write(p_, t)
 
-    timeseries_u.store(u_.vector(), t)
-    timeseries_p.store(p_.vector(), t)
+    #timeseries_u.store(u_.vector(), t)
+    #timeseries_p.store(p_.vector(), t)
 
     # Update previous solution
     u_n.assign(u_)
